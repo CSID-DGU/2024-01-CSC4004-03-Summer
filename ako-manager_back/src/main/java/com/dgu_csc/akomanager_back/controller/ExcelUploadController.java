@@ -31,6 +31,9 @@ public class ExcelUploadController {
             String[][] data = readExcel(file);
             excels.add(data);
             return ResponseEntity.ok("File processed successfully.");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("File not found: " + e.getMessage());
         } catch (IOException e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Error processing file: " + e.getMessage());
@@ -41,22 +44,22 @@ public class ExcelUploadController {
     }
 
     public static String[][] readExcel(MultipartFile file) throws IOException {
-        InputStream is = file.getInputStream();
-        Workbook workbook = new XSSFWorkbook(is);
-        Sheet sheet = workbook.getSheetAt(0);
-        int rows = sheet.getPhysicalNumberOfRows();
-        int cols = sheet.getRow(0).getPhysicalNumberOfCells();
-        String[][] data = new String[rows][cols];
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            int rows = sheet.getPhysicalNumberOfRows();
+            int cols = sheet.getRow(0).getPhysicalNumberOfCells();
+            String[][] data = new String[rows][cols];
 
-        for (int r = 0; r < rows; r++) {
-            Row row = sheet.getRow(r);
-            for (int c = 0; c < cols; c++) {
-                Cell cell = row.getCell(c, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
-                data[r][c] = (cell == null) ? "" : cell.toString();
+            for (int r = 0; r < rows; r++) {
+                Row row = sheet.getRow(r);
+                for (int c = 0; c < cols; c++) {
+                    Cell cell = row.getCell(c, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                    data[r][c] = (cell == null) ? "" : cell.toString();
+                }
             }
+            return data;
         }
-        workbook.close();
-        return data;
     }
 
     public static void readExcelLocal(String path, String filename, ArrayList<Subject> list) {
