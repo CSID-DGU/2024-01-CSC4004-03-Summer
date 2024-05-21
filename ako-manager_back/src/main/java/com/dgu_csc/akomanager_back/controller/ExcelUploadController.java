@@ -13,30 +13,34 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @RestController
 @RequestMapping("/excel")
 public class ExcelUploadController {
-    private final List<String[][]> excels = new ArrayList<String[][]>(); // 각 액셀 파일을 2차원 스트링 형태로 저장
+
+    private final List<String[][]> excels = new ArrayList<>();
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("No file uploaded.");
         }
+
         try {
             String[][] data = readExcel(file);
             excels.add(data);
             return ResponseEntity.ok("File processed successfully.");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error processing file: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Error processing file.");
+            return ResponseEntity.status(500).body("Unexpected error: " + e.getMessage());
         }
     }
 
-    public static String[][] readExcel(MultipartFile file) throws Exception {
+    public static String[][] readExcel(MultipartFile file) throws IOException {
         InputStream is = file.getInputStream();
         Workbook workbook = new XSSFWorkbook(is);
         Sheet sheet = workbook.getSheetAt(0);
@@ -55,7 +59,7 @@ public class ExcelUploadController {
         return data;
     }
 
-    public static void readExcel(String path, String filename, ArrayList<Subject> list) {
+    public static void readExcelLocal(String path, String filename, ArrayList<Subject> list) {
         try {
             FileInputStream file = new FileInputStream(path + filename);
             Workbook workbook = WorkbookFactory.create(file);
